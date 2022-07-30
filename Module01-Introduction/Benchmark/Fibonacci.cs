@@ -4,8 +4,11 @@ using BenchmarkDotNet.Attributes;
 namespace Dotnetos.AsyncExpert.Homework.Module01.Benchmark
 {
     [DisassemblyDiagnoser(exportCombinedDisassemblyReport: true)]
+    [MemoryDiagnoser]
     public class FibonacciCalc
     {
+        private readonly IDictionary<ulong, ulong> _fibs = new Dictionary<ulong, ulong> { { 1, 1 }, { 2, 1 } };
+
         // HOMEWORK:
         // 1. Write implementations for RecursiveWithMemoization and Iterative solutions
         // 2. Add MemoryDiagnoser to the benchmark
@@ -26,14 +29,31 @@ namespace Dotnetos.AsyncExpert.Homework.Module01.Benchmark
         [ArgumentsSource(nameof(Data))]
         public ulong RecursiveWithMemoization(ulong n)
         {
-            return 0;
+            if (!_fibs.ContainsKey(n))
+            {
+                _fibs[n] = RecursiveWithMemoization(n - 1) + RecursiveWithMemoization(n - 2);
+            }
+
+            return _fibs[n];
         }
-        
+
         [Benchmark]
         [ArgumentsSource(nameof(Data))]
         public ulong Iterative(ulong n)
         {
-            return 0;
+            if (n == 1 || n == 2) return 1;
+            ulong prev = 1;
+            ulong prePrev = 1;
+            ulong fib = 0;
+            while (n > 2)
+            {
+                fib = prev + prePrev;
+                prePrev = prev;
+                prev = fib;
+                n--;
+            }
+
+            return fib;
         }
 
         public IEnumerable<ulong> Data()
