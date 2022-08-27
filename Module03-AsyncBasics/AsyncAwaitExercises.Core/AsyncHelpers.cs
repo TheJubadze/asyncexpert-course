@@ -38,19 +38,20 @@ namespace AsyncAwaitExercises.Core
                 {
                     await Task.Delay(pause, token);
                     response = await client.GetAsync(url, token);
-                    Retry(ref currentTry, ref pause);
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadAsStringAsync();
                 }
                 catch (TaskCanceledException)
                 {
                     throw;
                 }
-                catch (Exception)
+                catch
                 {
                     Retry(ref currentTry, ref pause);
                 }
-            } while (!response.IsSuccessStatusCode && currentTry < maxTries);
+            } while (currentTry < maxTries);
 
-            if (!response.IsSuccessStatusCode && currentTry == maxTries)
+            if (currentTry == maxTries)
             {
                 throw new HttpRequestException();
             }
