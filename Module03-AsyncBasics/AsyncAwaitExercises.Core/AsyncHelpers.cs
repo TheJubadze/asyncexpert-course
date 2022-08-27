@@ -29,40 +29,25 @@ namespace AsyncAwaitExercises.Core
             }
 
             var currentTry = 0;
-            var pause = 0;
-            var response = new HttpResponseMessage();
+            var pause = 1000;
 
             do
             {
                 try
                 {
-                    await Task.Delay(pause, token);
-                    response = await client.GetAsync(url, token);
+                    var response = await client.GetAsync(url, token);
                     response.EnsureSuccessStatusCode();
                     return await response.Content.ReadAsStringAsync();
                 }
-                catch (TaskCanceledException)
-                {
-                    throw;
-                }
                 catch
                 {
-                    Retry(ref currentTry, ref pause);
+                    await Task.Delay(pause, token);
+                    currentTry++;
+                    pause <<= 1;
                 }
             } while (currentTry < maxTries);
 
-            if (currentTry == maxTries)
-            {
-                throw new HttpRequestException();
-            }
-
-            return await response.Content.ReadAsStringAsync();
-        }
-
-        private static void Retry(ref int currentTry, ref int pause)
-        {
-            currentTry++;
-            pause = pause == 0 ? 1000 : pause * 2;
+            throw new HttpRequestException();
         }
     }
 }
