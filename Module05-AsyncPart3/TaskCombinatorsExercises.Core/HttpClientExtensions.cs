@@ -23,7 +23,18 @@ namespace TaskCombinatorsExercises.Core
         public static async Task<string> ConcurrentDownloadAsync(this HttpClient httpClient,
             string[] urls, int millisecondsTimeout, CancellationToken token)
         {
-            return String.Empty;
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+
+            var timeoutTask = Task.Delay(millisecondsTimeout, cts.Token);
+            var getUrlsTasks = urls.Select(u => httpClient.GetAsync(u, cts.Token));
+            var firstCompletedTask = await Task.WhenAny(timeoutTask, await Task.WhenAny(getUrlsTasks));
+
+            cts.Cancel();
+
+            if (firstCompletedTask != timeoutTask)
+                return await (await (Task<HttpResponseMessage>)firstCompletedTask).Content.ReadAsStringAsync();
+
+            throw new TaskCanceledException();
         }
     }
 }
